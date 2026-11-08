@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yelo Bacha 🌸</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 50%, #1a0826 0%, #080312 70%, #030108 100%);
+      font-family: 'Poppins', sans-serif;
+      color: #fff;
+    }
+
+    /* Ambient background canvas for wind petals and code particles */
+    #fxCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Central Stage */
+    .scene-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+
+    /* Flower Wrapper */
+    .flower-box {
+      position: relative;
+      width: 320px;
+      height: 380px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: scale(0.6);
+      transition: opacity 1.8s ease, transform 2.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .flower-box.bloomed {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* SVG Flower Aesthetics */
+    svg.flower-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      filter: drop-shadow(0 0 25px rgba(255, 95, 175, 0.8))
+              drop-shadow(0 0 60px rgba(175, 82, 255, 0.45));
+    }
+
+    /* Stem Animation */
+    .stem {
+      stroke-dasharray: 400;
+      stroke-dashoffset: 400;
+      transition: stroke-dashoffset 2.2s ease-in-out;
+    }
+
+    .flower-box.bloomed .stem {
+      stroke-dashoffset: 0;
+    }
+
+    /* Leaves */
+    .leaf {
+      transform-origin: center bottom;
+      transform: scale(0);
+      transition: transform 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .flower-box.bloomed .leaf-left {
+      transform: scale(1);
+      transition-delay: 1.2s;
+    }
+
+    .flower-box.bloomed .leaf-right {
+      transform: scale(1);
+      transition-delay: 1.5s;
+    }
+
+    /* Petals Unfolding */
+    .petal {
+      transform-origin: 160px 150px;
+      transform: scale(0) rotate(0deg);
+      transition: transform 1.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .flower-box.bloomed .petal-layer-1 {
+      transform: scale(1);
+      transition-delay: 1.7s;
+    }
+    .flower-box.bloomed .petal-layer-2 {
+      transform: scale(1);
+      transition-delay: 2.1s;
+    }
+    .flower-box.bloomed .petal-layer-3 {
+      transform: scale(1);
+      transition-delay: 2.5s;
+    }
+    .flower-box.bloomed .flower-core {
+      transform: scale(1);
+      transition-delay: 2.7s;
+    }
+
+    .flower-core {
+      transform-origin: 160px 150px;
+      transform: scale(0);
+      animation: pulse-glow 3s infinite alternate ease-in-out;
+    }
+
+    @keyframes pulse-glow {
+      0% { filter: drop-shadow(0 0 5px #fff) drop-shadow(0 0 15px #ff7bf0); }
+      100% { filter: drop-shadow(0 0 15px #fff) drop-shadow(0 0 35px #ffe682); }
+    }
+
+    /* Text Reveal */
+    .message-container {
+      margin-top: 15px;
+      text-align: center;
+      min-height: 120px;
+    }
+
+    .main-text {
+      font-family: 'Dancing Script', cursive;
+      font-size: 4.5rem;
+      font-weight: 700;
+      color: #fff5fb;
+      text-shadow: 
+        0 0 10px #ff66cc,
+        0 0 25px #ff1493,
+        0 0 50px #ff007f,
+        0 0 80px rgba(255, 0, 128, 0.8);
+      opacity: 0;
+      transform: translateY(30px) scale(0.9);
+      transition: opacity 2s ease, transform 2s cubic-bezier(0.2, 0.8, 0.2, 1);
+      letter-spacing: 2px;
+    }
+
+    .main-text.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      animation: gentle-float 4s ease-in-out infinite alternate;
+    }
+
+    .sub-text {
+      font-size: 0.95rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: rgba(255, 220, 245, 0.7);
+      opacity: 0;
+      transition: opacity 1.5s ease 1s;
+      margin-top: 5px;
+    }
+
+    .sub-text.visible {
+      opacity: 1;
+    }
+
+    @keyframes gentle-float {
+      0% { transform: translateY(0px); }
+      100% { transform: translateY(-8px); }
+    }
+
+    /* Ambient wind indicator */
+    .replay-btn {
+      position: absolute;
+      bottom: 25px;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 9px 24px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: all 0.3s;
+      opacity: 0;
+    }
+
+    .replay-btn.show {
+      opacity: 0.85;
+    }
+
+    .replay-btn:hover {
+      opacity: 1;
+      background: rgba(255, 105, 180, 0.35);
+      border-color: rgba(255, 182, 193, 0.6);
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(255, 105, 180, 0.6);
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="fxCanvas"></canvas>
+
+  <div class="scene-container">
+    <!-- SVG Glowing Flower -->
+    <div class="flower-box" id="flowerBox">
+      <svg class="flower-svg" viewBox="0 0 320 380">
+        <defs>
+          <!-- Petal Gradient -->
+          <linearGradient id="petalGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff" />
+            <stop offset="35%" stop-color="#ff7eb9" />
+            <stop offset="100%" stop-color="#ff128a" />
+          </linearGradient>
+
+          <linearGradient id="petalGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#ffeef7" />
+            <stop offset="60%" stop-color="#ff47a9" />
+            <stop offset="100%" stop-color="#8a00ff" />
+          </linearGradient>
+
+          <linearGradient id="stemGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#34e89e" />
+            <stop offset="100%" stop-color="#0fe3a1" />
+          </linearGradient>
+
+          <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#85ffbd" />
+            <stop offset="100%" stop-color="#0cb878" />
+          </linearGradient>
+
+          <radialGradient id="coreGrad">
+            <stop offset="0%" stop-color="#fffbcf" />
+            <stop offset="50%" stop-color="#ffd53e" />
+            <stop offset="100%" stop-color="#ff7b00" />
+          </radialGradient>
+        </defs>
+
+        <!-- Stem -->
+        <path class="stem" d="M160,150 Q150,260 160,370" fill="none" stroke="url(#stemGrad)" stroke-width="5" stroke-linecap="round"/>
+
+        <!-- Leaves -->
+        <g class="leaf leaf-left">
+          <path d="M157,250 C120,240 100,210 105,190 C125,200 145,225 157,250 Z" fill="url(#leafGrad)" opacity="0.9" filter="drop-shadow(0 0 8px #0fe3a1)"/>
+        </g>
+        <g class="leaf leaf-right">
+          <path d="M160,280 C195,270 215,240 210,220 C190,230 170,255 160,280 Z" fill="url(#leafGrad)" opacity="0.9" filter="drop-shadow(0 0 8px #0fe3a1)"/>
+        </g>
+
+        <!-- Outer Petals (Layer 1) -->
+        <g class="petal petal-layer-1" fill="url(#petalGrad2)" opacity="0.85">
+          <path d="M160,150 C110,60 70,110 115,165 Z" />
+          <path d="M160,150 C210,60 250,110 205,165 Z" />
+          <path d="M160,150 C70,140 85,210 140,185 Z" />
+          <path d="M160,150 C250,140 235,210 180,185 Z" />
+        </g>
+
+        <!-- Mid Petals (Layer 2) -->
+        <g class="petal petal-layer-2" fill="url(#petalGrad1)" opacity="0.95">
+          <path d="M160,150 C130,70 190,70 160,150 Z" transform="rotate(0 160 150)" />
+          <path d="M160,150 C130,70 190,70 160,150 Z" transform="rotate(60 160 150)" />
+          <path d="M160,150 C130,70 190,70 160,150 Z" transform="rotate(120 160 150)" />
+          <path d="M160,150 C130,70 190,70 160,150 Z" transform="rotate(180 160 150)" />
+          <path d="M160,150 C130,70 190,70 160,150 Z" transform="rotate(240 160 150)" />
+          <path d="M160,150 C130,70 190,70 160,150 Z" transform="rotate(300 160 150)" />
+        </g>
+
+        <!-- Inner Petals (Layer 3) -->
+        <g class="petal petal-layer-3" fill="url(#petalGrad1)">
+          <path d="M160,150 C140,95 180,95 160,150 Z" transform="rotate(30 160 150)" />
+          <path d="M160,150 C140,95 180,95 160,150 Z" transform="rotate(90 160 150)" />
+          <path d="M160,150 C140,95 180,95 160,150 Z" transform="rotate(150 160 150)" />
+          <path d="M160,150 C140,95 180,95 160,150 Z" transform="rotate(210 160 150)" />
+          <path d="M160,150 C140,95 180,95 160,150 Z" transform="rotate(270 160 150)" />
+          <path d="M160,150 C140,95 180,95 160,150 Z" transform="rotate(330 160 150)" />
+        </g>
+
+        <!-- Glowing Core -->
+        <circle class="flower-core" cx="160" cy="150" r="16" fill="url(#coreGrad)"/>
+      </svg>
+    </div>
+
+    <!-- Glowing Text Elements -->
+    <div class="message-container">
+      <h1 class="main-text" id="mainText">Yelo Bacha</h1>
+      <p class="sub-text" id="subText">A flower coded with love & light</p>
+    </div>
+  </div>
+
+  <button class="replay-btn" id="replayBtn" onclick="runSequence()">Replay ✨</button>
+
+  <script>
+    const canvas = document.getElementById('fxCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Code lines that turn into the flower
+    const codeSnippets = [
+      "const soul = 'pure';",
+      "function bloom() {",
+      "01001100 01001111",
+      "<div>✨</div>",
+      "love.transform(bloom);",
+      "while(heart.beats) {",
+      "git commit -m 'for you'",
+      "const petal = new Glow();",
+      "color: #ff4fa3;",
+      "01110110 01100101",
+      "opacity: 1;",
+      "stem.grow();",
+      "<flower glow='true'/>",
+      "return happiness;"
+    ];
+
+    let codeParticles = [];
+    let windPetals = [];
+    let sparkBursts = [];
+    let morphState = "coding"; // "coding" -> "converging" -> "bloomed"
+
+    // Petal wind particle
+    class BlowingPetal {
+      constructor() {
+        this.reset(true);
+      }
+      reset(randomX = false) {
+        this.x = randomX ? Math.random() * (width + 200) - 100 : -50;
+        this.y = Math.random() * (height + 100) - 50;
+        this.size = Math.random() * 11 + 9;
+        this.vx = Math.random() * 2.8 + 1.8; // wind blowing rightwards
+        this.vy = Math.sin(Math.random() * 60) * 0.9 + 0.5;
+        this.rotation = Math.random() * 360;
+        this.spin = (Math.random() - 0.5) * 3;
+        this.opacity = Math.random() * 0.55 + 0.35;
+        this.color = ["#ff7bb7", "#ff4398", "#ff9ec9", "#ffa1d8", "#ffffff"][Math.floor(Math.random() * 5)];
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy + Math.sin(this.x * 0.005) * 0.5;
+        this.rotation += this.spin;
+        if (this.x > width + 60 || this.y > height + 60) {
+          this.reset(false);
+        }
+      }
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate((this.rotation * Math.PI) / 180);
+        ctx.fillStyle = this.color;
+        ctx.shadowColor = "#ff2f92";
+        ctx.shadowBlur = 8;
+        ctx.globalAlpha = this.opacity;
+        ctx.beginPath();
+        // Delicate teardrop petal shape
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(this.size / 2, -this.size / 2, this.size, 0);
+        ctx.quadraticCurveTo(this.size / 2, this.size, 0, 0);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // Code Particle
+    class CodeParticle {
+      constructor(text) {
+        this.text = text;
+        this.init();
+      }
+      init() {
+        this.x = Math.random() * (width - 150) + 75;
+        this.y = Math.random() * (height - 150) + 75;
+        this.targetX = width / 2;
+        this.targetY = height / 2 - 40;
+        this.alpha = 0.9;
+        this.speed = Math.random() * 0.035 + 0.02;
+        this.size = Math.random() * 3 + 12;
+        this.color = ["#00f0ff", "#ff41b4", "#ffe600", "#7cfc00", "#c77dff"][Math.floor(Math.random() * 5)];
+      }
+      update() {
+        if (morphState === "converging") {
+          // Pull smoothly into center
+          this.x += (this.targetX - this.x) * this.speed;
+          this.y += (this.targetY - this.y) * this.speed;
+          this.speed += 0.002;
+          this.alpha -= 0.012;
+        } else if (morphState === "coding") {
+          this.y += Math.sin(Date.now() * 0.002 + this.x) * 0.4;
+        }
+      }
+      draw() {
+        if (this.alpha <= 0) return;
+        ctx.save();
+        ctx.font = `600 ${this.size}px 'Courier New', monospace`;
+        ctx.fillStyle = this.color;
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 10;
+        ctx.globalAlpha = Math.max(0, this.alpha);
+        ctx.fillText(this.text, this.x, this.y);
+        ctx.restore();
+      }
+    }
+
+    // Particle burst on bloom moment
+    class Spark {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 8 + 2;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.life = 1;
+        this.decay = Math.random() * 0.02 + 0.015;
+        this.size = Math.random() * 4 + 2;
+        this.color = ["#ffffff", "#ffe682", "#ff3df1", "#5df2ff"][Math.floor(Math.random() * 4)];
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vx *= 0.96;
+        this.vy *= 0.96;
+        this.life -= this.decay;
+      }
+      draw() {
+        if (this.life <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = this.life;
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = this.color;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // Initialize wind petals
+    for (let i = 0; i < 45; i++) {
+      windPetals.push(new BlowingPetal());
+    }
+
+    function createSparks() {
+      const centerX = width / 2;
+      const centerY = height / 2 - 40;
+      for (let i = 0; i < 90; i++) {
+        sparkBursts.push(new Spark(centerX, centerY));
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, width, height);
+
+      // Draw code particles
+      if (morphState !== "bloomed" || codeParticles.some(p => p.alpha > 0)) {
+        codeParticles.forEach(p => {
+          p.update();
+          p.draw();
+        });
+      }
+
+      // Draw explosion sparks
+      sparkBursts.forEach((s, idx) => {
+        s.update();
+        s.draw();
+        if (s.life <= 0) sparkBursts.splice(idx, 1);
+      });
+
+      // Ambient wind petals blowing
+      windPetals.forEach(p => {
+        p.update();
+        p.draw();
+      });
+
+      requestAnimationFrame(render);
+    }
+    render();
+
+    // Sequence controller
+    function runSequence() {
+      const flowerBox = document.getElementById('flowerBox');
+      const mainText = document.getElementById('mainText');
+      const subText = document.getElementById('subText');
+      const replayBtn = document.getElementById('replayBtn');
+
+      // Reset
+      flowerBox.classList.remove('bloomed');
+      mainText.classList.remove('visible');
+      subText.classList.remove('visible');
+      replayBtn.classList.remove('show');
+
+      // Reset code particles
+      codeParticles = [];
+      for (let i = 0; i < 30; i++) {
+        const text = codeSnippets[i % codeSnippets.length];
+        codeParticles.push(new CodeParticle(text));
+      }
+
+      morphState = "coding";
+
+      // Step 1: Code swirls and begins converging
+      setTimeout(() => {
+        morphState = "converging";
+      }, 1600);
+
+      // Step 2: Code hits epicenter -> Spark Burst & Flower Blooms!
+      setTimeout(() => {
+        morphState = "bloomed";
+        createSparks();
+        flowerBox.classList.add('bloomed');
+      }, 3000);
+
+      // Step 3: Text "Yelo Bacha" appears glowing
+      setTimeout(() => {
+        mainText.classList.add('visible');
+      }, 4200);
+
+      setTimeout(() => {
+        subText.classList.add('visible');
+        replayBtn.classList.add('show');
+      }, 5400);
+    }
+
+    // Interactive sparkle burst on click
+    window.addEventListener('click', (e) => {
+      for (let i = 0; i < 15; i++) {
+        sparkBursts.push(new Spark(e.clientX, e.clientY));
+      }
+    });
+
+    // Start on load
+    window.onload = runSequence;
+  </script>
+</body>
+</html>
